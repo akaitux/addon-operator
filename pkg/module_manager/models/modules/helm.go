@@ -158,7 +158,10 @@ func (hm *HelmModule) RunHelmInstall(logLabels map[string]string) error {
 	}
 	defer os.Remove(valuesPath)
 
-	helmClient := hm.dependencies.HelmClientFactory.NewClient(hm.namespace, logLabels)
+	helmClient, err := hm.dependencies.HelmClientFactory.NewClient(hm.namespace, logLabels)
+	if err != nil {
+		return fmt.Errorf("helmClient initialization failed: %s", err)
+	}
 
 	// Render templates to prevent excess helm runs.
 	var renderedManifests string
@@ -344,6 +347,10 @@ func (hm *HelmModule) Render(namespace string, debug bool) (string, error) {
 		return "", err
 	}
 	defer os.Remove(valuesPath)
+	client, err := hm.dependencies.HelmClientFactory.NewClient(hm.namespace)
+	if err != nil {
+		return "", err
+	}
 
-	return hm.dependencies.HelmClientFactory.NewClient(hm.namespace).Render(hm.name, hm.path, []string{valuesPath}, nil, namespace, debug)
+	return client.Render(hm.name, hm.path, []string{valuesPath}, nil, namespace, debug)
 }

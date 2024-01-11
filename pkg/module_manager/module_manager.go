@@ -500,7 +500,11 @@ func (mm *ModuleManager) RefreshStateFromHelmReleases(logLabels map[string]strin
 		return &ModulesState{}, nil
 	}
 
-	releasedModules, err := mm.dependencies.Helm.NewClient(app.Namespace, logLabels).ListReleasesNames(nil)
+	client, err := mm.dependencies.Helm.NewClient(app.Namespace, logLabels)
+	if err != nil {
+		return nil, fmt.Errorf("Error while creating new helm client for NS '%s': %s", app.Namespace, err)
+	}
+	releasedModules, err := client.ListReleasesNames(nil)
 	if err != nil {
 		return nil, err
 	}
@@ -516,7 +520,11 @@ func (mm *ModuleManager) RefreshStateFromHelmReleases(logLabels map[string]strin
 	}
 
 	for _, namespace := range namespaces.Items {
-		modules, err := mm.dependencies.Helm.NewClient(namespace.Name, logLabels).ListReleasesNames(nil)
+		nsclient, err := mm.dependencies.Helm.NewClient(namespace.Name, logLabels)
+		if err != nil {
+			return nil, fmt.Errorf("Error while creating new helm client for NS '%s': %s", namespace.Name, err)
+		}
+		modules, err := nsclient.ListReleasesNames(nil)
 		if err != nil {
 			return nil, err
 		}
@@ -657,7 +665,11 @@ func (mm *ModuleManager) FindModuleNamespace(moduleName string) (string, error) 
 	}
 
 	for _, namespace := range namespaces {
-		modules, err := mm.dependencies.Helm.NewClient(namespace).ListReleasesNames(nil)
+		nsclient, err := mm.dependencies.Helm.NewClient(namespace)
+		if err != nil {
+			return "", fmt.Errorf("Error while creating helm client for NS '%s': %s", namespace, err)
+		}
+		modules, err := nsclient.ListReleasesNames(nil)
 		if err != nil {
 			return "", err
 		}
@@ -745,7 +757,11 @@ func (mm *ModuleManager) DeleteModule(moduleName string, logLabels map[string]st
 		}
 		helmModule, _ := modules.NewHelmModule(ml, mm.TempDir, &hmdeps, mm.ValuesValidator)
 		if helmModule != nil {
-			releaseExists, err := mm.dependencies.Helm.NewClient(ml.GetNamespace(), deleteLogLabels).IsReleaseExists(
+			client, err := mm.dependencies.Helm.NewClient(ml.GetNamespace(), deleteLogLabels)
+			if err != nil {
+				return fmt.Errorf("Error while creating helm client for NS '%s': %s", ml.GetNamespace(), err)
+			}
+			releaseExists, err := client.IsReleaseExists(
 				ml.GetName(),
 			)
 			if !releaseExists {
@@ -756,7 +772,7 @@ func (mm *ModuleManager) DeleteModule(moduleName string, logLabels map[string]st
 				}
 			} else {
 				// Chart and release are existed, so run helm delete command
-				err := mm.dependencies.Helm.NewClient(ml.GetNamespace(), deleteLogLabels).DeleteRelease(ml.GetName())
+				err := client.DeleteRelease(ml.GetName())
 				if err != nil {
 					return err
 				}

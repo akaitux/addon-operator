@@ -27,7 +27,8 @@ func TestHelmFactory(t *testing.T) {
 		g.Expect(err).ShouldNot(HaveOccurred())
 
 		// Ensure client is a builtin Helm3 library.
-		helmCl := helm.NewClient("default", nil)
+		helmCl, err := helm.NewClient("default", nil)
+		g.Expect(err).ShouldNot(HaveOccurred())
 		g.Expect(helmCl).To(BeAssignableToTypeOf(new(helm3.Helm3Client)), "should create helm3ib client")
 	})
 
@@ -46,7 +47,8 @@ func TestHelmFactory(t *testing.T) {
 		g.Expect(err).ShouldNot(HaveOccurred())
 
 		// Ensure client is a builtin Helm3 library.
-		helmCl := helm.NewClient("default", nil)
+		helmCl, err := helm.NewClient("default", nil)
+		g.Expect(err).ShouldNot(HaveOccurred())
 		g.Expect(helmCl).To(BeAssignableToTypeOf(new(helm3lib.LibClient)), "should create helm3ib client")
 
 		// Do simple test against fake cluster.

@@ -2,7 +2,6 @@ package helm
 
 import (
 	"fmt"
-	"os"
 
 	log "github.com/sirupsen/logrus"
 
@@ -19,13 +18,13 @@ type ClientFactory struct {
 	NewClientFn func(logLabels ...map[string]string) client.HelmClient
 }
 
-func (f *ClientFactory) NewClient(namespace string, logLabels ...map[string]string) client.HelmClient {
+func (f *ClientFactory) NewClient(namespace string, logLabels ...map[string]string) (client.HelmClient, error) {
 	if f.NewClientFn != nil {
-		return f.NewClientFn(logLabels...)
+		return f.NewClientFn(logLabels...), nil
 	}
 
 	if client, ok := f.cache[namespace]; ok {
-		return client
+		return client, nil
 	}
 
 	helmVersion, _ := DetectHelmVersion()
@@ -57,13 +56,11 @@ func (f *ClientFactory) NewClient(namespace string, logLabels ...map[string]stri
 			KubeClient: f.kubeClient,
 		}, logLabels...)
 		if err != nil {
-			//!!! TODO Remove os.Exit and return error
-			fmt.Printf("Error while init helm3: %s\n", err)
-			os.Exit(1)
+			return nil, fmt.Errorf("Error while init helm3: %s\n", err)
 		}
 	}
 	f.cache[namespace] = client
-	return client
+	return client, nil
 }
 
 func InitHelmClientFactory(kubeClient *klient.Client) (*ClientFactory, error) {

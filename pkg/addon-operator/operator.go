@@ -1287,7 +1287,12 @@ func (op *AddonOperator) HandleModulePurge(t sh_task.Task, labels map[string]str
 		}
 	}
 
-	err := op.Helm.NewClient(moduleNamespace, t.GetLogLabels()).DeleteRelease(hm.ModuleName)
+	client, err := op.Helm.NewClient(moduleNamespace, t.GetLogLabels())
+	if err != nil {
+		logEntry.Errorf("Module purge failed, error while creating helm client for NS '%s': %s", moduleNamespace, err)
+		return
+	}
+	err = client.DeleteRelease(hm.ModuleName)
 	if err != nil {
 		// Purge is for unknown modules, just print warning.
 		logEntry.Warnf("Module purge failed, no retry. Error: %s", err)
